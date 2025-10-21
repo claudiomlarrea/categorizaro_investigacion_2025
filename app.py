@@ -29,11 +29,11 @@ def _ensure_docx():
 # CONSTANTES DE PUNTAJE / TOPES (mismos que definimos contigo)
 # ──────────────────────────────────────────────────────────────────────────────
 CATEGORIA_RANGOS = [
-    ("I – Investigador Superior", 1500, 2000),
-    ("II – Investigador Principal", 1000, 1499),
-    ("III – Investigador Independiente", 600, 999),
-    ("IV – Investigador Adjunto", 300, 599),
-    ("V – Investigador Asistente", 1, 299),
+    ("I – Investigador Superior", 1000, 2000),
+    ("II – Investigador Principal", 500, 999),
+    ("III – Investigador Independiente", 300, 499),
+    ("IV – Investigador Adjunto", 100, 299),
+    ("V – Investigador Asistente", 1, 99),
     ("VI – Becario de Iniciación", 0, 0),
 ]
 SECCIONES_MAX = {
