@@ -1,0 +1,3 @@
+{
+  "generic_years_capture": "(\\d+)\\s*(años|anios|years)"
+}

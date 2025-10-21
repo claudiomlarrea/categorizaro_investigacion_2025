@@ -1,0 +1,79 @@
+{
+  "sections": {
+    "Formación académica y complementaria": {
+      "max_points": 450,
+      "items": {
+        "Doctorado": {
+          "pattern": "Doctorado",
+          "unit_points": 250,
+          "max_points": 375
+        },
+        "Maestría": {
+          "pattern": "Maestr[ií]a",
+          "unit_points": 150,
+          "max_points": 225
+        },
+        "Especialización": {
+          "pattern": "Especializaci[oó]n",
+          "unit_points": 70,
+          "max_points": 105
+        }
+      }
+    },
+    "Cargos (docencia, gestión y otros)": {
+      "max_points": 350,
+      "items": {
+        "Docencia universitaria": {
+          "pattern": "Docencia",
+          "unit_points": 30,
+          "max_points": 150
+        },
+        "Cargos de gestión": {
+          "pattern": "Rector|Decano|Director|Secretari[oa]",
+          "unit_points": 60,
+          "max_points": 150
+        }
+      }
+    },
+    "Ciencia y Tecnología": {
+      "max_points": 500,
+      "items": {
+        "Proyectos de investigación": {
+          "pattern": "proyecto",
+          "unit_points": 20,
+          "max_points": 100
+        },
+        "Publicaciones": {
+          "pattern": "art[ií]culo|libro|cap[ií]tulo",
+          "unit_points": 20,
+          "max_points": 150
+        }
+      }
+    },
+    "Producciones y servicios": {
+      "max_points": 500,
+      "items": {
+        "Servicios técnicos": {
+          "pattern": "servicio",
+          "unit_points": 20,
+          "max_points": 80
+        },
+        "Patentes o software": {
+          "pattern": "patente|software",
+          "unit_points": 50,
+          "max_points": 100
+        }
+      }
+    },
+    "Otros antecedentes": {
+      "max_points": 200,
+      "items": {
+        "Premios": {
+          "pattern": "premio|distinci[oó]n",
+          "unit_points": 20,
+          "max_points": 100
+        }
+      }
+    }
+  }
+}
