@@ -1,68 +1,136 @@
+
 import streamlit as st
 import re, json, io
-from docx import Document
 import pandas as pd
+from docx import Document as DocxDocument
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-st.set_page_config(page_title='Valorador de CV - UCCuyo', layout='wide')
-st.title('Universidad Católica de Cuyo — Valorador de CV Docente (PDF/DOCX)')
-
+# PDF opcional
 try:
     import pdfplumber
     HAVE_PDF = True
 except Exception:
     HAVE_PDF = False
 
+st.set_page_config(page_title="Valorador de CV - UCCuyo (DOCX/PDF)", layout="wide")
+st.title("Universidad Católica de Cuyo — Valorador de CV Docente")
+st.caption("Incluye exportación a Excel y Word. Para PDF se requiere 'pdfplumber'.")
+
 @st.cache_data
 def load_json(path):
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-criteria = load_json('criteria.json')
-patterns = load_json('patterns.json')
+criteria = load_json("criteria.json")
 
-def extract_text(file, ext):
-    if ext == 'docx':
-        doc = Document(file)
-        text = '\n'.join(p.text for p in doc.paragraphs)
-        for t in doc.tables:
-            for row in t.rows:
-                text += '\n' + ' | '.join(c.text for c in row.cells)
-        return text
-    elif ext == 'pdf':
-        if not HAVE_PDF:
-            st.error('Instalá pdfplumber para leer PDF: pip install pdfplumber')
-            return ''
-        import pdfplumber
-        text = []
-        with pdfplumber.open(file) as pdf:
-            for page in pdf.pages:
-                text.append(page.extract_text() or '')
-        return '\n'.join(text)
-    return ''
+def extract_text_docx(file):
+    doc = DocxDocument(file)
+    text = "\n".join(p.text for p in doc.paragraphs)
+    for t in doc.tables:
+        for row in t.rows:
+            text += "\n" + " | ".join(c.text for c in row.cells)
+    return text
+
+def extract_text_pdf(file):
+    if not HAVE_PDF:
+        raise RuntimeError("Instalá pdfplumber: pip install pdfplumber")
+    chunks = []
+    with pdfplumber.open(file) as pdf:
+        for p in pdf.pages:
+            chunks.append(p.extract_text() or "")
+    return "\n".join(chunks)
 
 def match_count(pattern, text):
     return len(re.findall(pattern, text, re.IGNORECASE)) if pattern else 0
 
-def clip(v, cap): return min(v, cap)
+def clip(v, cap):
+    return min(v, cap) if cap else v
 
-cv = st.file_uploader('Cargar CV (.docx o .pdf)', type=['docx', 'pdf'])
-if cv:
-    ext = cv.name.split('.')[-1].lower()
-    texto = extract_text(cv, ext)
-    st.success(f'Archivo cargado: {cv.name}')
-    total = 0
-    for s, cfg in criteria['sections'].items():
-        st.subheader(s)
-        data = []
-        subtotal = 0
-        for item, icfg in cfg['items'].items():
-            c = match_count(icfg['pattern'], texto)
-            pts = clip(c * icfg['unit_points'], icfg['max_points'])
-            subtotal += pts
-            data.append({'Ítem': item, 'Ocurrencias': c, 'Puntaje': pts})
-        df = pd.DataFrame(data)
+uploaded = st.file_uploader("Cargar CV (.docx o .pdf)", type=["docx", "pdf"])
+if uploaded:
+    ext = uploaded.name.split(".")[-1].lower()
+    try:
+        raw_text = extract_text_docx(uploaded) if ext == "docx" else extract_text_pdf(uploaded)
+    except Exception as e:
+        st.error(str(e))
+        st.stop()
+
+    st.success(f"Archivo cargado: {uploaded.name}")
+    with st.expander("Ver texto extraído (debug)"):
+        st.text_area("Texto", raw_text, height=220)
+
+    results = {}
+    total = 0.0
+
+    for section, cfg in criteria["sections"].items():
+        st.markdown(f"### {section}")
+        rows = []
+        subtotal_raw = 0.0
+        for item, icfg in cfg.get("items", {}).items():
+            c = match_count(icfg.get("pattern", ""), raw_text)
+            pts = clip(c * icfg.get("unit_points", 0), icfg.get("max_points", 0))
+            rows.append({"Ítem": item, "Ocurrencias": c, "Puntaje (tope ítem)": pts, "Tope ítem": icfg.get("max_points", 0)})
+            subtotal_raw += pts
+        df = pd.DataFrame(rows)
+        subtotal = clip(subtotal_raw, cfg.get("max_points", 0))
         st.dataframe(df, use_container_width=True)
-        subtotal = clip(subtotal, cfg['max_points'])
-        st.info(f'Subtotal {s}: {subtotal} / máx {cfg['max_points']}')
+        st.info(f"Subtotal {section}: {subtotal} / máx {cfg.get('max_points', 0)}")
+        results[section] = {"df": df, "subtotal": subtotal}
         total += subtotal
-    st.metric('Puntaje total', total)
+
+    st.markdown("---")
+    st.subheader("Puntaje total")
+    st.metric("Total acumulado", f"{total:.1f}")
+
+    # Exportaciones
+    st.markdown("---")
+    st.subheader("Exportar resultados")
+
+    # Excel
+    out = io.BytesIO()
+    with pd.ExcelWriter(out, engine="xlsxwriter") as writer:
+        for sec, data in results.items():
+            data["df"].to_excel(writer, sheet_name=sec[:31], index=False)
+        resumen = pd.DataFrame({"Sección": list(results.keys()),
+                                "Subtotal": [results[s]["subtotal"] for s in results]})
+        resumen.loc[len(resumen)] = ["TOTAL", resumen["Subtotal"].sum()]
+        resumen.to_excel(writer, sheet_name="RESUMEN", index=False)
+    st.download_button("Descargar Excel", data=out.getvalue(),
+                       file_name="valoracion_cv.xlsx",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                       use_container_width=True)
+
+    # Word
+    def export_word(results, total):
+        doc = DocxDocument()
+        p = doc.add_paragraph("Universidad Católica de Cuyo — Secretaría de Investigación")
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        doc.add_paragraph("Informe de valoración de CV").alignment = WD_ALIGN_PARAGRAPH.CENTER
+        doc.add_paragraph("")
+        doc.add_paragraph(f"Puntaje total: {total:.1f}")
+        for sec, data in results.items():
+            doc.add_heading(sec, level=2)
+            df = data["df"]
+            if df.empty:
+                doc.add_paragraph("Sin ítems detectados.")
+            else:
+                tbl = doc.add_table(rows=1, cols=len(df.columns))
+                hdr = tbl.rows[0].cells
+                for i, c in enumerate(df.columns):
+                    hdr[i].text = str(c)
+                for _, row in df.iterrows():
+                    cells = tbl.add_row().cells
+                    for i, c in enumerate(df.columns):
+                        cells[i].text = str(row[c])
+            doc.add_paragraph(f"Subtotal sección: {data['subtotal']:.1f}")
+        bio = io.BytesIO()
+        doc.save(bio)
+        return bio.getvalue()
+
+    st.download_button("Descargar informe Word",
+                       data=export_word(results, total),
+                       file_name="informe_valoracion_cv.docx",
+                       mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                       use_container_width=True)
+else:
+    st.info("Subí un archivo para iniciar la valoración.")
