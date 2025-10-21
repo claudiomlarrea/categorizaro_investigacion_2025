@@ -38,9 +38,9 @@ CATEGORIA_RANGOS = [
 ]
 SECCIONES_MAX = {
     "Formación académica y complementaria": 450,
-    "Cargos (docencia, gestión y otros)": 500,
+    "Cargos (docencia, gestión y otros)": 350,
     "Ciencia y Tecnología": 500,
-    "Producciones y servicios": 350,
+    "Producciones y servicios": 500,
     "Otros antecedentes": 200,
 }
 
