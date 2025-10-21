@@ -1,0 +1,43 @@
+
+# CONFIGURACIÓN DEL VALORADOR DE CURRÍCULUM DOCENTE
+version: 1.1
+ultima_actualizacion: "2025-10-21"
+
+secciones_max:
+  formacion: 450
+  cargos: 350
+  cyt: 500
+  producciones: 500
+  otros: 200
+
+calibracion:
+  intercept: -401.07
+  form: -0.6246
+  cargos: 10.0202
+  cyt: 18.8741
+  prod: 16.1052
+  otros: 0.0
+
+detectores_topes:
+  articulos_referato: 10
+  articulos_sin_referato: 8
+  libros: 4
+  capitulos: 6
+  eventos: 10
+  cargos_docentes: 4
+  cargos_gestion: 3
+  premios: 5
+
+regex:
+  doctorado: "(doctor(a|ado) en|ph.?d)"
+  maestria: "(maestr(ía|ia)|mag(í|i)ster)"
+  especializacion: "especializaci(ó|o)n"
+  diplomatura: "diplomatur(a|as)"
+  articulo_referato: "(revista|issn|scopus|wos|jcr|doi|q[1-4])"
+  articulo_sin_referato: "(art(í|i)culo|paper)"
+  libro: "(libro|isbn)"
+  capitulo: "(cap(í|i)tulo de libro)"
+  proyecto: "(proyecto|p.i.c.t|p.i.c.o|f.o.n.c.y.t|f.o.n.s.e.c.y.t)"
+  congreso: "(congreso|jornada|simposio|encuentro)"
+  beca: "(becario|beca doctoral|beca posdoctoral)"
+  premio: "(premio|menci(ó|o)n honor(í|i)fica)"
