@@ -37,8 +37,8 @@ CATEGORIA_RANGOS = [
     ("VI – Becario de Iniciación", 0, 0),
 ]
 SECCIONES_MAX = {
-    "Formación académica y complementaria": 250,
-    "Cargos (docencia, gestión y otros)": 350,
+    "Formación académica y complementaria": 450,
+    "Cargos (docencia, gestión y otros)": 450,
     "Ciencia y Tecnología": 600,
     "Producciones y servicios": 600,
     "Otros antecedentes": 200,
