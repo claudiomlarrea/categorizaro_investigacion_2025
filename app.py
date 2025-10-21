@@ -12,9 +12,25 @@ try:
 except Exception:
     HAVE_PDF = False
 
+# === Rangos de categoría ===
+CATEGORIA_RANGOS = [
+    ("I – Investigador Superior",      1000, 2000),
+    ("II – Investigador Principal",      500,  999),
+    ("III – Investigador Independiente", 300,  499),
+    ("IV – Investigador Adjunto",        100,  299),
+    ("V – Investigador Asistente",         1,   99),
+    ("VI – Becario de Iniciación",         0,    0),
+]
+
+def obtener_categoria(total):
+    for nombre, minimo, maximo in CATEGORIA_RANGOS:
+        if minimo <= total <= maximo:
+            return nombre
+    return "Sin categoría"
+
 st.set_page_config(page_title="Valorador de CV - UCCuyo (DOCX/PDF)", layout="wide")
 st.title("Universidad Católica de Cuyo — Valorador de CV Docente")
-st.caption("Incluye exportación a Excel y Word. Para PDF se requiere 'pdfplumber'.")
+st.caption("Incluye exportación a Excel y Word + categoría automática según puntaje total.")
 
 @st.cache_data
 def load_json(path):
@@ -78,9 +94,12 @@ if uploaded:
         results[section] = {"df": df, "subtotal": subtotal}
         total += subtotal
 
+    categoria = obtener_categoria(total)
+
     st.markdown("---")
-    st.subheader("Puntaje total")
+    st.subheader("Puntaje total y categoría")
     st.metric("Total acumulado", f"{total:.1f}")
+    st.metric("Categoría alcanzada", categoria)
 
     # Exportaciones
     st.markdown("---")
@@ -94,6 +113,7 @@ if uploaded:
         resumen = pd.DataFrame({"Sección": list(results.keys()),
                                 "Subtotal": [results[s]["subtotal"] for s in results]})
         resumen.loc[len(resumen)] = ["TOTAL", resumen["Subtotal"].sum()]
+        resumen.loc[len(resumen)] = ["CATEGORÍA", categoria]
         resumen.to_excel(writer, sheet_name="RESUMEN", index=False)
     st.download_button("Descargar Excel", data=out.getvalue(),
                        file_name="valoracion_cv.xlsx",
@@ -101,13 +121,14 @@ if uploaded:
                        use_container_width=True)
 
     # Word
-    def export_word(results, total):
+    def export_word(results, total, categoria):
         doc = DocxDocument()
         p = doc.add_paragraph("Universidad Católica de Cuyo — Secretaría de Investigación")
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         doc.add_paragraph("Informe de valoración de CV").alignment = WD_ALIGN_PARAGRAPH.CENTER
         doc.add_paragraph("")
         doc.add_paragraph(f"Puntaje total: {total:.1f}")
+        doc.add_paragraph(f"Categoría alcanzada: {categoria}")
         for sec, data in results.items():
             doc.add_heading(sec, level=2)
             df = data["df"]
@@ -128,7 +149,7 @@ if uploaded:
         return bio.getvalue()
 
     st.download_button("Descargar informe Word",
-                       data=export_word(results, total),
+                       data=export_word(results, total, categoria),
                        file_name="informe_valoracion_cv.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                        use_container_width=True)
